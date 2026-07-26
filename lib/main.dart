@@ -10,8 +10,11 @@ import 'ui/profile/profile_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ui/profile/profile_viewmodel.dart';
 
+import 'services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   final prefs = await SharedPreferences.getInstance();
   
   runApp(
@@ -29,9 +32,10 @@ class AarivApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeName = ref.watch(profileSettingsProvider.select((s) => s.themeName)) ?? 'default';
+    final themeName = ref.watch(profileSettingsProvider.select((s) => s.themeName));
     return MaterialApp(
       title: 'Aariv',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.getTheme(themeName),
       home: const MainScreen(),
     );
@@ -71,7 +75,7 @@ class _MainScreenState extends State<MainScreen> {
             _buildNavItem(Icons.check_box_outlined, 'Todo', 0, AppColors.todoAccent),
             _buildNavItem(Icons.timer_outlined, 'Timer', 1, AppColors.timerAccent),
             _buildNavItem(Icons.currency_rupee, 'Expense', 2, AppColors.expenseAccent),
-            _buildNavItem(Icons.person_outline, 'Profile', 3, Theme.of(context).scaffoldBackgroundColor), // No specific accent mentioned for profile
+            _buildNavItem(Icons.person_outline, 'Profile', 3, Colors.white),
           ],
         ),
       ),

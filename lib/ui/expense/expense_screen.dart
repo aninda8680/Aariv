@@ -89,7 +89,7 @@ class ExpenseScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: BrutalistContainer(
-                    color: AppColors.expenseAccent.withValues(alpha: 0.3),
+                    color: const Color(0xFFD4F7E3), // Light mint green
                     padding: const EdgeInsets.all(12),
                     shadowOffset: 2,
                     borderWidth: 1.5,
@@ -112,7 +112,7 @@ class ExpenseScreen extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: BrutalistContainer(
-                    color: AppColors.error.withValues(alpha: 0.3),
+                    color: const Color(0xFFFFD6D6), // Light red
                     padding: const EdgeInsets.all(12),
                     shadowOffset: 2,
                     borderWidth: 1.5,
