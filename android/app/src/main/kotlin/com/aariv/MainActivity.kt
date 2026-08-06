@@ -1,4 +1,4 @@
-package com.example.aariv
+package com.aariv
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -73,67 +73,86 @@ class ExpenseScreen extends ConsumerWidget {
   }
 
   Widget _buildSummaryCard(BuildContext context, ExpenseSummary summary, String currency) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: BrutalistContainer(
+        padding: EdgeInsets.zero,
+        color: isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
         child: Column(
           children: [
-            const Text('TOTAL BALANCE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-            const SizedBox(height: 8),
-            Text(
-              '$currency${summary.balance.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.ink),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+              child: Column(
+                children: [
+                  const Text('TOTAL BALANCE', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.black54, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$currency${summary.balance.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.ink),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: BrutalistContainer(
-                    color: const Color(0xFFD4F7E3), // Light mint green
-                    padding: const EdgeInsets.all(12),
-                    shadowOffset: 2,
-                    borderWidth: 1.5,
-                    child: Column(
-                      children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.south_west, size: 16, color: Colors.green),
-                            SizedBox(width: 4),
-                            Text('INCOME', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text('$currency${summary.income.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                      ],
+            Container(height: 3, color: AppColors.ink),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      color: const Color(0xFFD4F7E3),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.arrow_downward, color: Colors.green, size: 16),
+                              SizedBox(width: 4),
+                              Text('INCOME', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink, fontSize: 12)),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$currency${summary.income.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.ink),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: BrutalistContainer(
-                    color: const Color(0xFFFFD6D6), // Light red
-                    padding: const EdgeInsets.all(12),
-                    shadowOffset: 2,
-                    borderWidth: 1.5,
-                    child: Column(
-                      children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.north_east, size: 16, color: AppColors.error),
-                            SizedBox(width: 4),
-                            Text('EXPENSE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text('$currency${summary.expense.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                      ],
+                  Container(width: 3, color: AppColors.ink),
+                  Expanded(
+                    child: Container(
+                      color: const Color(0xFFFFD6D6),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.arrow_upward, color: AppColors.error, size: 16),
+                              SizedBox(width: 4),
+                              Text('EXPENSE', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink, fontSize: 12)),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$currency${summary.expense.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.ink),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            )
+                ],
+              ),
+            ),
           ],
         ),
       ),

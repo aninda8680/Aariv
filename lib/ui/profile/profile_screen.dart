@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import 'profile_viewmodel.dart';
 import '../../providers/database_provider.dart';
+import '../timer/timer_settings_viewmodel.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -18,12 +19,13 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28)),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        physics: const ClampingScrollPhysics(), // Less bounce if it does scroll
+        padding: const EdgeInsets.all(12),
         children: [
           _buildHeader(context, settings, notifier),
-          const SizedBox(height: 32),
-          const Text('SETTINGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 16),
+          const Text('SETTINGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 12),
           _buildSettingsGroup(
             title: 'Appearance',
             children: [
@@ -46,7 +48,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSettingsGroup(
             title: 'Timer Defaults',
             children: [
@@ -54,11 +56,11 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.access_time,
                 title: 'Pomodoro Duration',
                 subtitle: '${settings.pomodoroMinutes} minutes',
-                onTap: () => _showPomodoroDialog(context, notifier, settings.pomodoroMinutes),
+                onTap: () => _showPomodoroDialog(context, ref, notifier, settings.pomodoroMinutes),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSettingsGroup(
             title: 'Expense Defaults',
             children: [
@@ -70,7 +72,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSettingsGroup(
             title: 'Data Management',
             children: [
@@ -82,13 +84,16 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 32),
-          const Center(
-            child: Text(
-              'Aariv v1.0.0\nFully local. No tracking.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
-            ),
+          const SizedBox(height: 12),
+          _buildSettingsGroup(
+            title: 'Legal',
+            children: [
+              _buildSettingTile(
+                icon: Icons.privacy_tip_outlined,
+                title: 'Privacy Policy',
+                onTap: () => _showPrivacyPolicy(context),
+              ),
+            ],
           ),
         ],
       ),
@@ -151,7 +156,7 @@ class ProfileScreen extends ConsumerWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           children: [
             Icon(icon, color: titleColor),
@@ -236,13 +241,79 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showPomodoroDialog(BuildContext context, ProfileSettingsNotifier notifier, int currentMinutes) {
-    // Skipping full implementation for brevity, assuming predefined list
-    notifier.updatePomodoroMinutes(currentMinutes == 25 ? 50 : 25);
+  void _showPomodoroDialog(BuildContext context, WidgetRef ref, ProfileSettingsNotifier notifier, int currentMinutes) {
+    final controller = TextEditingController(text: currentMinutes.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: AppColors.ink, width: 3),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: const Text('Pomodoro Duration (Minutes)', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.ink, width: 2)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.bold)),
+          ),
+          BrutalistButton(
+            onPressed: () {
+              final mins = int.tryParse(controller.text);
+              if (mins != null && mins > 0) {
+                notifier.updatePomodoroMinutes(mins);
+                // Sync with timer's database settings
+                final timerSettingsAsync = ref.read(timerSettingsProvider);
+                if (timerSettingsAsync.value != null) {
+                  ref.read(timerSettingsProvider.notifier).updateSettings(
+                    timerSettingsAsync.value!.copyWith(pomodoroMinutes: mins)
+                  );
+                }
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      )
+    );
   }
 
   void _showCurrencyDialog(BuildContext context, ProfileSettingsNotifier notifier, String currentCurrency) {
-    notifier.updateCurrency(currentCurrency == '₹' ? '\$' : '₹');
+    final currencies = ['₹', '\$', '€', '£', '¥'];
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: AppColors.ink, width: 3),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: const Text('Select Currency', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: currencies.map((c) => GestureDetector(
+            onTap: () {
+              notifier.updateCurrency(c);
+              Navigator.pop(ctx);
+            },
+            child: BrutalistContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              color: c == currentCurrency ? AppColors.expenseAccent : Colors.white,
+              child: Text(c, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            ),
+          )).toList(),
+        ),
+      )
+    );
   }
 
   void _showClearDataConfirm(BuildContext context, WidgetRef ref) {
@@ -323,6 +394,34 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showPrivacyPolicy(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: const BorderSide(color: AppColors.ink, width: 3),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: const Text('Privacy Policy', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const SingleChildScrollView(
+          child: Text(
+            'This application is fully local. We do not collect, store, track, or share any personal data or usage metrics.\n\n'
+            'All your tasks, timer history, and expense records are stored securely on your local device.\n\n'
+            'Since there are no servers, your data is entirely yours and never leaves your phone.',
+            style: TextStyle(fontSize: 14),
+          ),
+        ),
+        actions: [
+          BrutalistButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('GOT IT'),
+          ),
+        ],
+      )
     );
   }
 }

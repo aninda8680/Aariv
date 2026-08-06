@@ -12,35 +12,38 @@ class AppColors {
 }
 
 class AppTheme {
-  static ThemeData getTheme(String themeName) {
-    final bgColor = themeName == 'beige' ? AppColors.beigeBackground : AppColors.background;
+  static ThemeData getTheme(String themeName, {bool isDarkMode = false}) {
+    final baseBgColor = themeName == 'beige' ? AppColors.beigeBackground : AppColors.background;
+    final bgColor = isDarkMode ? Colors.black : baseBgColor;
+    
     return ThemeData(
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
       scaffoldBackgroundColor: bgColor,
-      colorScheme: ColorScheme.light(
-        primary: AppColors.ink,
+      colorScheme: (isDarkMode ? ColorScheme.dark() : ColorScheme.light()).copyWith(
+        primary: isDarkMode ? Colors.white : AppColors.ink,
         secondary: AppColors.todoAccent,
         surface: bgColor,
         error: AppColors.error,
-        onPrimary: bgColor,
+        onPrimary: isDarkMode ? Colors.black : bgColor,
         onSecondary: AppColors.ink,
-        onSurface: AppColors.ink,
-        onError: bgColor,
+        onSurface: isDarkMode ? Colors.white : AppColors.ink,
+        onError: isDarkMode ? Colors.black : bgColor,
       ),
       textTheme: GoogleFonts.interTextTheme().apply(
-        bodyColor: AppColors.ink,
-        displayColor: AppColors.ink,
+        bodyColor: isDarkMode ? Colors.white : AppColors.ink,
+        displayColor: isDarkMode ? Colors.white : AppColors.ink,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: bgColor,
-        foregroundColor: AppColors.ink,
+        foregroundColor: isDarkMode ? Colors.white : AppColors.ink,
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: bgColor,
-        selectedItemColor: AppColors.ink,
-        unselectedItemColor: Colors.black54,
+        selectedItemColor: isDarkMode ? Colors.white : AppColors.ink,
+        unselectedItemColor: isDarkMode ? Colors.white54 : Colors.black54,
         elevation: 0,
         type: BottomNavigationBarType.fixed,
       ),
@@ -72,16 +75,18 @@ class BrutalistContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? Theme.of(context).scaffoldBackgroundColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveColor = color ?? (isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor);
+    
     return Container(
       margin: margin,
       decoration: BoxDecoration(
         color: effectiveColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: AppColors.ink, width: borderWidth),
+        border: Border.all(color: isDark && effectiveColor == Colors.black ? Colors.white : AppColors.ink, width: borderWidth),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink,
+            color: isDark && effectiveColor == Colors.black ? Colors.white : AppColors.ink,
             offset: Offset(shadowOffset, shadowOffset),
             blurRadius: 0,
             spreadRadius: 0,
@@ -90,7 +95,13 @@ class BrutalistContainer extends StatelessWidget {
       ),
       child: Padding(
         padding: padding ?? EdgeInsets.zero,
-        child: child,
+        child: IconTheme(
+          data: const IconThemeData(color: AppColors.ink),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: AppColors.ink),
+            child: child,
+          ),
+        ),
       ),
     );
   }

@@ -83,7 +83,9 @@ class TimerController extends Notifier<TimerState> {
 
   @override
   TimerState build() {
+    print('TimerController: build() called');
     ref.onDispose(() {
+      print('TimerController: onDispose() called');
       _timer?.cancel();
     });
     
@@ -99,6 +101,7 @@ class TimerController extends Notifier<TimerState> {
   }
 
   void resetToDefault() {
+    print('TimerController: resetToDefault() called');
     _timer?.cancel();
     final mode = ref.read(timerModeStateProvider);
     final settingsAsync = ref.read(timerSettingsProvider);

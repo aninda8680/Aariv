@@ -8,6 +8,7 @@ import '../todo/todo_viewmodel.dart';
 import '../../data/database.dart';
 import 'timer_history_screen.dart';
 import 'timer_stats_view.dart';
+import 'timer_settings_viewmodel.dart';
 
 class TimerScreen extends ConsumerWidget {
   const TimerScreen({super.key});
@@ -18,13 +19,14 @@ class TimerScreen extends ConsumerWidget {
     final timerState = ref.watch(timerControllerProvider);
     final activeTask = ref.watch(activeTaskSelectionProvider);
     final tasksAsync = ref.watch(tasksStreamProvider);
+    final settingsAsync = ref.watch(timerSettingsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Timer', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: AppColors.ink, size: 28),
+            icon: const Icon(Icons.history, size: 28),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const TimerHistoryScreen()));
             },
@@ -40,7 +42,7 @@ class TimerScreen extends ConsumerWidget {
             child: Center(
               child: mode == TimerMode.stopwatch
                   ? _buildDigitalDisplay(timerState)
-                  : _buildRingProgress(context, timerState, mode),
+                  : _buildRingProgress(context, ref, timerState, mode, settingsAsync),
             ),
           ),
           const SizedBox(height: 16),
@@ -81,15 +83,8 @@ class TimerScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            border: const Border(
-              top: BorderSide(color: AppColors.ink, width: 4),
-              left: BorderSide(color: AppColors.ink, width: 4),
-              right: BorderSide(color: AppColors.ink, width: 4),
-            ),
-          ),
+        return BrutalistContainer(
+          color: Theme.of(context).brightness == Brightness.dark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
           padding: const EdgeInsets.all(24.0).copyWith(bottom: MediaQuery.of(context).viewInsets.bottom + 24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -140,6 +135,8 @@ class TimerScreen extends ConsumerWidget {
   }
 
   Widget _buildModeToggle(BuildContext context, WidgetRef ref, TimerMode currentMode) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white : AppColors.ink;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: BrutalistContainer(
@@ -166,7 +163,7 @@ class TimerScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12, // slightly smaller to prevent clipping
-                            color: TimerMode.values[i] == currentMode ? AppColors.ink : Colors.black54,
+                            color: TimerMode.values[i] == currentMode ? AppColors.ink : (isDark ? Colors.white70 : Colors.black54),
                           ),
                         ),
                       ),
@@ -174,7 +171,7 @@ class TimerScreen extends ConsumerWidget {
                   ),
                 ),
                 if (i < TimerMode.values.length - 1)
-                  Container(width: 1.5, color: AppColors.ink),
+                  Container(width: 1.5, color: borderColor),
               ],
             ],
           ),
@@ -183,10 +180,12 @@ class TimerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRingProgress(BuildContext context, TimerState state, TimerMode mode) {
+  Widget _buildRingProgress(BuildContext context, WidgetRef ref, TimerState state, TimerMode mode, AsyncValue<TimerSettings> settingsAsync) {
     final minutes = state.remainingSeconds ~/ 60;
     final seconds = state.remainingSeconds % 60;
     final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final maxCycles = settingsAsync.value?.cyclesBeforeLongBreak ?? 4;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Stack(
       alignment: Alignment.center,
@@ -199,7 +198,7 @@ class TimerScreen extends ConsumerWidget {
               progress: state.progress,
               color: AppColors.timerAccent,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              borderColor: AppColors.ink,
+              borderColor: isDark ? Colors.white : AppColors.ink,
               strokeWidth: 24,
             ),
           ),
@@ -215,19 +214,67 @@ class TimerScreen extends ConsumerWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2),
               ),
               if (state.pomodoroPhase == PomodoroPhase.work)
-                Text('${(state.cycleCount % 4) + 1}/4', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                Text('${(state.cycleCount % maxCycles) + 1}/$maxCycles', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
             ],
-            Text(
-              timeStr,
-              style: const TextStyle(
-                fontSize: 56,
-                fontWeight: FontWeight.w900,
-                color: AppColors.ink,
+            GestureDetector(
+              onTap: mode == TimerMode.countdown && !state.isRunning
+                  ? () => _showCountdownTimeDialog(context, ref, state.initialSeconds)
+                  : null,
+              child: Text(
+                timeStr,
+                style: TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.ink,
+                ),
               ),
             ),
+            if (mode == TimerMode.countdown && !state.isRunning)
+              Text('TAP TO EDIT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.black38)),
           ],
         ),
       ],
+    );
+  }
+
+  void _showCountdownTimeDialog(BuildContext context, WidgetRef ref, int currentSeconds) {
+    final minutes = currentSeconds ~/ 60;
+    final controller = TextEditingController(text: minutes.toString());
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: AppColors.ink, width: 3),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: const Text('Set Countdown (Minutes)', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.ink, width: 2)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.bold)),
+          ),
+          BrutalistButton(
+            color: AppColors.timerAccent,
+            onPressed: () {
+              final mins = int.tryParse(controller.text);
+              if (mins != null && mins > 0) {
+                ref.read(timerControllerProvider.notifier).resetWith(mins * 60);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      )
     );
   }
 
@@ -277,7 +324,7 @@ class TimerScreen extends ConsumerWidget {
           Expanded(
             flex: 1,
             child: BrutalistButton(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: Theme.of(context).brightness == Brightness.dark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
               onPressed: () => ref.read(timerControllerProvider.notifier).stop(),
               child: const Icon(Icons.stop, color: AppColors.ink),
             ),
@@ -330,12 +377,25 @@ class BrutalistRingPainter extends CustomPainter {
       false,
       progressPaint,
     );
+
+    // Draw borders
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    // Outer border
+    canvas.drawCircle(center, radius + (strokeWidth / 2), borderPaint);
+    // Inner border
+    canvas.drawCircle(center, radius - (strokeWidth / 2), borderPaint);
   }
 
   @override
   bool shouldRepaint(covariant BrutalistRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
            oldDelegate.color != color ||
-           oldDelegate.backgroundColor != backgroundColor;
+           oldDelegate.backgroundColor != backgroundColor ||
+           oldDelegate.borderColor != borderColor ||
+           oldDelegate.strokeWidth != strokeWidth;
   }
 }

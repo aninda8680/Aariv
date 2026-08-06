@@ -75,7 +75,7 @@ class TodoScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: SizedBox(
-        width: 160,
+        width: 180,
         height: 50,
         child: BrutalistButton(
           onPressed: () => _showAddEditTaskSheet(context, ref),
@@ -93,6 +93,9 @@ class TodoScreen extends ConsumerWidget {
   }
 
   Widget _buildFilterChips(BuildContext context, WidgetRef ref, TodoFilter currentFilter) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white : AppColors.ink;
+    
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -107,14 +110,14 @@ class TodoScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.todoAccent : Theme.of(context).scaffoldBackgroundColor,
-                  border: Border.all(color: AppColors.ink, width: 2),
+                  border: Border.all(color: borderColor, width: 2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   filter.name.toUpperCase(),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? AppColors.ink : Colors.black87,
+                    color: isSelected ? AppColors.ink : (isDark ? Colors.white70 : Colors.black87),
                   ),
                 ),
               ),
@@ -181,7 +184,7 @@ class TodoScreen extends ConsumerWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: task.isCompleted ? AppColors.todoAccent : Theme.of(context).scaffoldBackgroundColor,
+                    color: task.isCompleted ? AppColors.todoAccent : Colors.transparent,
                     border: Border.all(color: AppColors.ink, width: 2),
                     borderRadius: BorderRadius.circular(4),
                   ),
@@ -284,13 +287,11 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.task != null;
-    return Container(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return BrutalistContainer(
       margin: const EdgeInsets.all(16).copyWith(bottom: MediaQuery.of(context).viewInsets.bottom + 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border.all(color: AppColors.ink, width: 3),
-        boxShadow: const [BoxShadow(color: AppColors.ink, offset: Offset(4, 4))],
-      ),
+      color: isDark ? AppColors.background : Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.all(24),
       child: SingleChildScrollView(
         child: Column(
@@ -301,8 +302,10 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
             const SizedBox(height: 16),
             TextField(
               controller: titleController,
+              style: const TextStyle(color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'What needs to be done?',
+                hintStyle: const TextStyle(color: Colors.black54),
                 border: OutlineInputBorder(
                   borderSide: const BorderSide(color: AppColors.ink, width: 2),
                   borderRadius: BorderRadius.circular(0),
@@ -317,8 +320,10 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
             TextField(
               controller: notesController,
               maxLines: 3,
+              style: const TextStyle(color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'Notes (optional)',
+                hintStyle: const TextStyle(color: Colors.black54),
                 border: OutlineInputBorder(
                   borderSide: const BorderSide(color: AppColors.ink, width: 2),
                   borderRadius: BorderRadius.circular(0),
@@ -333,8 +338,11 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
             // Priority Dropdown
             DropdownButtonFormField<TaskPriority>(
               initialValue: priority,
+              style: const TextStyle(color: AppColors.ink),
+              dropdownColor: AppColors.background,
               decoration: const InputDecoration(
                 labelText: 'Priority',
+                labelStyle: TextStyle(color: AppColors.ink),
                 border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.ink, width: 2)),
               ),
               items: TaskPriority.values.map((p) => DropdownMenuItem(value: p, child: Text(p.name.toUpperCase()))).toList(),
